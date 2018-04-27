@@ -1,0 +1,12 @@
+[Unit]
+Description=Puppet agent stats exporter for Prometheus
+After=network.target
+
+[Service]
+EnvironmentFile=-/etc/sysconfig/prom-puppet-agent-exporter
+ExecStart=/usr/bin/prom-puppet-agent-exporter $PROM_PUPPET_EXPORTER_OPTS
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target
+Alias=prom-puppet-agent-exporter.service

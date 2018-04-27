@@ -1,0 +1,25 @@
+# my global config
+global:
+  scrape_interval:     5s # Set the scrape interval to every 5 seconds. Default is every 1 minute.
+
+# A scrape configuration containing exactly one endpoint to scrape:
+# Here it's Prometheus itself.
+scrape_configs:
+  # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
+  - job_name: 'puppet_agent'
+
+    # metrics_path defaults to '/metrics'
+    # scheme defaults to 'http'.
+
+    static_configs:
+    - targets:
+      - prom_puppet_agent_exporter_summary_report:9001
+      - prom_puppet_agent_exporter_full_report:9001
+      - prom_puppet_agent_exporter_agent_disabled:9001
+    relabel_configs:
+    - source_labels: [__address__]
+      separator: ;
+      regex: ([^:]+)(:(\d+))?
+      target_label: host
+      replacement: $1
+      action: replace

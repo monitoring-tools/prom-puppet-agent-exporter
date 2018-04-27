@@ -1,0 +1,64 @@
+version: '3.1'
+services:
+  prom_puppet_agent_exporter_summary_report:
+    build: .
+    ports:
+      - 9001:9001
+    volumes:
+      - ./example/puppet_agent/state/last_run_summary.yaml:/var/lib/puppet/state/last_run_summary.yaml
+    command:
+      - --puppet.disabled-lock=/var/lib/puppet/state/agent_disabled.lock
+  prom_puppet_agent_exporter_full_report:
+    build: .
+    ports:
+      - 9002:9001
+    volumes:
+      - ./example/puppet_agent/state/last_run_report.yaml:/var/lib/puppet/state/last_run_report.yaml
+    command:
+      - --puppet.disabled-lock=/var/lib/puppet/state/agent_disabled.lock
+      - --puppet.last-run-report=/var/lib/puppet/state/last_run_report.yaml
+  prom_puppet_agent_exporter_agent_disabled:
+    build: .
+    ports:
+      - 9003:9001
+    volumes:
+      - ./example/puppet_agent/state/agent_disabled.lock:/var/lib/puppet/state/agent_disabled.lock
+    command:
+      - --puppet.disabled-lock=/var/lib/puppet/state/agent_disabled.lock
+  prometheus:
+    image: quay.io/prometheus/prometheus
+    ports:
+      - 9090:9090
+    volumes:
+      - ./example/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    links:
+      - prom_puppet_agent_exporter_summary_report
+      - prom_puppet_agent_exporter_full_report
+      - prom_puppet_agent_exporter_agent_disabled
+    depends_on:
+      - prom_puppet_agent_exporter_summary_report
+      - prom_puppet_agent_exporter_full_report
+      - prom_puppet_agent_exporter_agent_disabled
+  grafana:
+    image: grafana/grafana:4.6.2
+    volumes:
+      - ./example/grafana-dashboard.json:/var/lib/grafana/dashboards/dashboards.json
+      - ./example/grafana/grafana.ini:/etc/grafana/grafana.ini
+    ports:
+      - 3000:3000
+    links:
+      - prometheus
+    depends_on:
+      - prometheus
+  grafana_provisioner:
+    image: byrnedo/alpine-curl:latest
+    volumes:
+      - ./example/grafana/wait-for.sh:/root/wait-for.sh
+      - ./example/grafana/provision.sh:/root/provision.sh
+    entrypoint:
+      - /bin/sh
+    command: -c /root/provision.sh
+    links:
+      - grafana
+    depends_on:
+      - grafana
