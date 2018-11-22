@@ -1,10 +1,16 @@
 package main
 
 import (
+	"hash/fnv"
 	"strconv"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
+
+func hash(s string) float64 {
+	h := fnv.New64a()
+	return float64(h.Sum64())
+}
 
 // NewFullReportScraper creates new scraper for puppet agent report file
 func NewFullReportScraper(namespace, reportFilename, disableLockFilename string) PuppetYamlReportScraper {
@@ -28,7 +34,7 @@ func (r *fullReportScraper) UnmarshalYAML(unmarshal func(interface{}) error) err
 	}
 
 	r.setPuppetVersion(report.PuppetVersion)
-	r.setConfigTimestamp(report.ConfigurationVersion)
+	r.setConfigTimestamp(hash(report.ConfigurationVersion))
 
 	r.setInfo("environment", report.Environment)
 
@@ -44,7 +50,7 @@ func (r *fullReportScraper) UnmarshalYAML(unmarshal func(interface{}) error) err
 type fullReport struct {
 	Metrics              fullReportMetricsSections
 	PuppetVersion        string  `yaml:"puppet_version"`
-	ConfigurationVersion float64 `yaml:"configuration_version"`
+	ConfigurationVersion string  `yaml:"configuration_version"`
 	Environment          string
 }
 
